@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily pot</title>
+<style>
+:root{--bg:#FAF6EE;--ink:#1a1a1a;--mint:#CDEFDD;--lav:#E6E0F5;--peach:#FFD9C7;--butter:#FBEDA6;--lime:#D4F55A;--sky:#D3E8F7;box-sizing:border-box;padding-top:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));padding-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px));color-scheme:light}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
+input{-webkit-user-select:text;user-select:text}
+#app{max-width:480px;margin:0 auto;padding:18px 16px 110px}
+h1{font-size:24px;margin:0;font-weight:800}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.top h1{flex:1}
+.card{border:2px solid var(--ink);border-radius:20px;padding:16px 18px;margin-bottom:20px}
+.btn{border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);min-height:44px;min-width:44px;padding:0 16px;font:inherit;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:transform .08s}
+.btn:active{transform:translate(2px,2px)}
+.btn:focus-visible,.row:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.btn.on{background:var(--lime)}
+.btn.pri{background:var(--lime)}
+.btn.bad{background:var(--peach)}
+.btn[disabled]{background:#eee;color:#777;border-style:dashed}
+.date{position:relative;flex:1}
+.date .btn{width:100%;background:var(--lav)}
+.date input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.big{font-size:38px;font-weight:800;line-height:1.1}
+.bar{height:18px;border:2px solid var(--ink);border-radius:999px;background:#fff;margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;background:repeating-linear-gradient(45deg,var(--ink) 0 2px,transparent 2px 7px);border-right:2px solid var(--ink);transition:width .25s}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:54px;padding:0 8px 0 18px;background:#fff;border:2px solid var(--ink);border-radius:999px;margin-bottom:10px;font-weight:600;width:100%;font-family:inherit;font-size:16px;color:var(--ink);text-align:left;cursor:pointer}
+.row span.nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:13px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:5px 12px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.paid{background:var(--mint)}
+.part{background:var(--butter)}
+.leave{background:var(--sky)}
+.nofood{background:var(--lav)}
+.dlg{max-height:92vh;overflow-y:auto}
+.rb{flex:1;text-align:left;background:none;border:0;font:inherit;font-weight:600;color:var(--ink);min-height:50px;padding:0;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unpaid{background:repeating-linear-gradient(45deg,var(--peach) 0 6px,#fff0e8 6px 12px)}
+.strip{display:flex;gap:8px;overflow-x:auto;padding:4px 16px 12px;margin:0 -16px 8px;position:relative;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.strip::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;width:58px;min-height:76px;border:2px solid var(--ink);border-radius:20px;background:#fff;font:inherit;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;scroll-snap-align:center;padding:0}
+.chip small{font-size:12px;font-weight:600}
+.chip b{font-size:20px;line-height:1.1}
+.chip.on{background:var(--lime)}
+.chip.mid{background:var(--butter)}
+.strip.d{margin:0 -20px;padding:4px 20px 12px}
+.chip i{display:block;width:22px;height:6px;border:1.5px solid var(--ink);border-radius:999px;background:repeating-linear-gradient(45deg,var(--ink) 0 2px,transparent 2px 5px)}
+.tabs{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)));background:var(--bg);border-top:2px solid var(--ink)}
+.tabs div{max-width:480px;margin:0 auto;display:flex;gap:8px}
+.tabs .btn{flex:1}
+.empty{border:2px dashed var(--ink);border-radius:20px;padding:28px 18px;text-align:center;margin-bottom:16px}
+.empty b{display:block;font-size:18px;margin-bottom:4px}
+.sub{font-size:13px;margin-top:6px}
+.lbl{font-size:13px;font-weight:600}
+.field{border:2px solid var(--ink);border-radius:999px;background:#fff;min-height:48px;padding:0 18px;font:inherit;font-size:16px;width:100%;color:var(--ink)}
+.err{font-size:13px;font-weight:600;margin:6px 4px 0;min-height:18px}
+.ov{position:fixed;inset:0;background:rgba(26,26,26,.45);display:flex;align-items:flex-end;justify-content:center;padding:16px;z-index:9}
+.dlg{background:var(--bg);border:2px solid var(--ink);border-radius:24px;padding:20px;width:100%;max-width:440px}
+.dlg h2{margin:0 0 12px;font-size:20px}
+.acts{display:flex;gap:8px;margin-top:14px}.acts .btn{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 18px;font-weight:600;font-size:14px;z-index:10;max-width:90%}
+.ic{display:flex;gap:6px}
+svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="layer"></div>
+<script>
+var I={
+ back:'<path d="M15 6l-6 6 6 6"/>',next:'<path d="M9 6l6 6-6 6"/>',
+ check:'<path d="M5 12l5 5 9-10"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
+ edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',del:'<path d="M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',leave:'<path d="M20 14a8 8 0 11-10-10 6 6 0 0010 10z"/>',nofood:'<circle cx="12" cy="12" r="8"/><path d="M6 6l12 12"/>'
+};
+function ic(n){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+I[n]+'</svg>'}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var KEY='dailypot.v1', S, date, toastT;
+function pad(n){return n<10?'0'+n:''+n}
+function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function shift(k,n){var p=k.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function fmt(k){var p=k.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2)}
+function uid(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function seed(){var names=['Abhimanyu','Adharsh','Jinesh','Tejas','Shivanandh','Roshan'];return {rate:25,people:names.map(function(n){return {id:uid(),name:n,start:null}}),days:{}}}
+function valid(o){return !!(o&&typeof o.rate==='number'&&o.rate>0&&Array.isArray(o.people)&&o.days&&typeof o.days==='object'&&o.people.every(function(p){return p&&typeof p.id==='string'&&typeof p.name==='string'})&&Object.keys(o.days).every(function(k){var d=o.days[k];return d&&typeof d.rate==='number'&&d.paid&&typeof d.paid==='object'}))}
+function load(){
+ var raw=null;
+ try{raw=localStorage.getItem(KEY)}catch(e){}
+ if(raw){
+  try{var o=JSON.parse(raw);if(valid(o))return o}catch(e){}
+  try{localStorage.setItem(KEY+'.corrupt',raw)}catch(e){}
+  setTimeout(function(){toast('Saved data was unreadable. Started fresh.')},300);
+ }
+ return seed();
+}
+function save(){
+ try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){toast('Couldn\u2019t save. Storage is unavailable.');return false}
+}
+function toast(m){
+ var t=document.getElementById('toast');if(t)t.remove();
+ t=document.createElement('div');t.id='toast';t.className='toast';t.setAttribute('role','status');t.textContent=m;document.body.appendChild(t);
+ clearTimeout(toastT);toastT=setTimeout(function(){t.remove()},2200);
+}
+function route(){var h=location.hash.replace('#','');return h==='dues'||h==='people'?h:'day'}
+function go(r){location.hash=r==='day'?'':r}
+function ensureDay(k){k=k||date;var d=S.days[k];if(!d){d=S.days[k]={rate:S.rate,paid:{}};S.people.forEach(function(p){if(!p.start){p.start=Object.keys(S.days).sort()[0]}})}return d}
+function carry(id,from,amt){
+ var k=shift(from,1),g0=0;
+ while(amt>0&&g0++<800){
+  var d=ensureDay(k);
+  if(!(d.leave&&d.leave[id])){
+   var room=Math.max(0,d.rate-(d.paid[id]||0)),g=Math.min(room,amt);
+   if(g>0){d.paid[id]=(d.paid[id]||0)+g;amt-=g}
+  }
+  k=shift(k,1);
+ }
+}
+function dayOf(k){return S.days[k]||null}
+function startOf(p){return p.start||null}
+function dues(){
+ var keys=Object.keys(S.days).sort(),first=keys[0],td=today();
+ return S.people.map(function(p){
+  var net=0,k=p.start||first,g=0;
+  while(k&&k<=td&&g++<1500){
+   var d=S.days[k];
+   net+=d?(d.leave&&d.leave[p.id]?0:d.rate):S.rate;
+   k=shift(k,1);
+  }
+  keys.forEach(function(x){net-=S.days[x].paid[p.id]||0});
+  var owe=Math.max(0,net);
+  return {p:p,owe:owe,credit:Math.max(0,-net),n:Math.ceil(owe/S.rate)};
+ });
+}
+var rf,rt,amAuto=false;
+function ndays(){var a=parseInt((document.getElementById('am')||{}).value,10);return a>0?Math.min(366,Math.ceil(a/S.rate)):0}
+function rfresh(){var sc=document.getElementById('rstrip'),pos=sc?sc.scrollLeft:0;document.getElementById('rwrap').innerHTML=rwrap();var s2=document.getElementById('rstrip');if(s2)s2.scrollLeft=pos}
+var rid;
+function isOff(k){var d=S.days[k];return !!(d&&d.leave&&d.leave[rid])}
+function endFor(n){var k=rf,c=0,g=0;while(g++<800){if(!isOff(k))c++;if(c>=n)return k;k=shift(k,1)}return k}
+function rwrap(){
+ var b=today(),s=shift(b,-45),e=shift(b,60);
+ if(rf<s)s=shift(rf,-10);if(rt>e)e=shift(rt,10);
+ var h='<div class="strip d" id="rstrip" role="group" aria-label="Pick start and end day">',k=s;
+ while(k<=e){
+  var p=k.split('-'),w=new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-GB',{weekday:'short'});
+  var on=k===rf||k===rt,mid=k>rf&&k<rt;
+  h+='<button class="chip'+(on?' on':mid?' mid':'')+'" data-a="rpick" data-v="'+k+'" aria-label="'+fmt(k)+'" aria-pressed="'+(on||mid)+'"><small>'+(k===b?'Today':w)+'</small><b>'+p[2]+'</b>'+(isOff(k)?'<small>Off</small>':'')+'</button>';
+  k=shift(k,1);
+ }
+ var n=0;for(var x=rf;x<=rt;x=shift(x,1))n++;
+ return h+'</div><div class="lbl" id="rsum" style="margin-top:4px">'+fmt(rf)+(rf===rt?'':' to '+fmt(rt))+' ('+n+(n===1?' day)':' days)')+'</div>';
+}
+function strip(){
+ var b=today(),s=shift(b,-45),e=shift(b,14);
+ if(date<s)s=shift(date,-10);if(date>e)e=shift(date,10);
+ var h='<div class="strip" id="strip" role="group" aria-label="Pick a day">',k=s;
+ while(k<=e){
+  var p=k.split('-'),w=new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-GB',{weekday:'short'});
+  h+='<button class="chip'+(k===date?' on':'')+'" data-a="pick" data-v="'+k+'" aria-label="'+fmt(k)+(k===b?', today':'')+'" aria-pressed="'+(k===date)+'"><small>'+(k===b?'Today':w)+'</small><b>'+p[2]+'</b><i'+(S.days[k]?'':' style="visibility:hidden"')+'></i></button>';
+  k=shift(k,1);
+ }
+ return h+'</div>';
+}
+function tabs(r){
+ function b(id,l){return '<button class="btn'+(r===id?' on':'')+'" data-a="tab" data-v="'+id+'"'+(r===id?' aria-current="page"':'')+'>'+l+'</button>'}
+ return '<nav class="tabs" aria-label="Main"><div>'+b('day','Day')+b('dues','Dues')+b('people','People')+'</div></nav>';
+}
+function render(){
+ var r=route(),h='';
+ if(r==='day')h=vDay();else if(r==='dues')h=vDues();else h=vPeople();
+ document.getElementById('app').innerHTML=h+tabs(r);
+ var st=document.getElementById('strip'),on=st&&st.querySelector('.chip.on');
+ if(on)st.scrollLeft=on.offsetLeft-st.clientWidth/2+on.offsetWidth/2;
+}
+function vDay(){
+ var d=dayOf(date),rate=d?d.rate:S.rate,n=S.people.length,got=0;
+ S.people.forEach(function(p){got+=d&&d.paid[p.id]||0});
+ var nl=S.people.filter(function(p){return d&&d.leave&&d.leave[p.id]}).length;var tgt=rate*(n-nl),pct=tgt?Math.min(100,Math.round(got/tgt*100)):0;
+ var np=S.people.filter(function(p){return d&&d.paid[p.id]>0}).length;
+ var h='<div class="top"><h1>Daily pot</h1><button class="btn" data-a="copy">'+ic('copy')+'Copy day</button></div>';
+ h+='<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn" data-a="prev" aria-label="Previous day">'+ic('back')+'</button>'+
+  '<div class="date"><button class="btn" tabindex="-1">'+fmt(date)+(date===today()?' \u00b7 Today':'')+'</button><input type="date" id="dp" value="'+date+'" aria-label="Pick date"></div>'+
+  '<button class="btn" data-a="next" aria-label="Next day">'+ic('next')+'</button></div>'+strip();
+ if(!n)return h+'<div class="empty"><b>Add your first person</b>People you add show up here each day.<div style="margin-top:14px"><button class="btn pri" data-a="tab" data-v="people">Add person</button></div></div>';
+ h+='<div class="card" style="background:var(--mint)"><div class="lbl">Collected</div><div class="big">'+got+' <span style="font-size:16px;font-weight:600">of '+tgt+'</span></div>'+
+  '<div class="bar" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+pct+'%"></i></div><div class="sub">'+np+' of '+(n-nl)+' paid'+(nl?', '+nl+' skipping':'')+'</div></div>';
+ S.people.forEach(function(p){
+  var a=d&&d.paid[p.id]||0;
+  var lv=d&&d.leave&&d.leave[p.id],full=a>=rate,part=a>0&&!full;
+  h+='<div class="row" style="padding-right:8px"><button class="rb" data-a="tog" data-id="'+p.id+'" aria-pressed="'+(a>0)+'">'+esc(p.name)+'</button>'+
+   '<button class="btn" style="min-height:38px;padding:0 12px" data-a="amt" data-id="'+p.id+'" aria-label="Set amount for '+esc(p.name)+'">'+a+'</button>'+
+   '<button class="tag '+(lv?(lv==='nofood'?'nofood':'leave'):full?'paid':part?'part':'unpaid')+'" style="font-family:inherit;color:var(--ink);cursor:pointer;min-height:38px" data-a="tog" data-id="'+p.id+'">'+ic(lv?(lv==='nofood'?'nofood':'leave'):full?'check':part?'edit':'x')+(lv?(lv==='nofood'?'No food':'Leave'):full?'Paid':part?'Partial':'Unpaid')+'</button></div>';
+ });
+ h+='<button class="btn" style="width:100%;margin-top:6px" data-a="add">'+ic('plus')+'Add person</button>';
+ return h;
+}
+function vDues(){
+ var list=dues(),tot=0,cnt=0;
+ list.forEach(function(x){tot+=x.owe;if(x.owe)cnt++});
+ var h='<div class="top"><button class="btn" data-a="tab" data-v="day" aria-label="Back">'+ic('back')+'</button><h1>Dues</h1></div>';
+ if(!Object.keys(S.days).length)return h+'<div class="empty"><b>No days recorded yet</b>Mark payments on the Day screen. Dues show up here.</div>';
+ h+='<div class="card" style="background:var(--butter)"><div class="lbl">Total pending</div><div class="big">'+tot+'</div><div class="sub">'+(cnt?cnt+' '+(cnt===1?'person owes':'people owe'):'Everyone is clear')+'</div></div>';
+ list.sort(function(a,b){return b.owe-a.owe}).forEach(function(x){
+  h+='<div class="row" style="cursor:default"><span class="nm">'+esc(x.p.name)+'</span>'+
+   (x.owe?'<span class="tag unpaid">Owes '+x.owe+' \u00b7 '+x.n+(x.n===1?' day':' days')+'</span>':x.credit?'<span class="tag paid">Advance '+x.credit+'</span>':'<span class="tag paid">'+ic('check')+'Clear</span>')+'</div>';
+ });
+ return h;
+}
+function vPeople(){
+ var h='<div class="top"><button class="btn" data-a="tab" data-v="day" aria-label="Back">'+ic('back')+'</button><h1>People</h1><button class="btn pri" data-a="add">'+ic('plus')+'Add</button></div>';
+ h+='<div class="card" style="background:var(--lav)"><div class="lbl">Amount per day (new days)</div><div style="display:flex;gap:8px;margin-top:8px"><input class="field" id="rate" type="number" inputmode="numeric" min="1" value="'+S.rate+'" aria-label="Amount per day"><button class="btn pri" data-a="rate">Save</button></div><div class="err" id="rerr" role="alert"></div></div>';
+ if(!S.people.length)return h+'<div class="empty"><b>Add your first person</b>Add the people who chip in each day.</div>';
+ S.people.forEach(function(p){
+  h+='<div class="row" style="cursor:default;padding-right:6px"><span class="nm">'+esc(p.name)+'</span><span class="ic"><button class="btn" data-a="edit" data-id="'+p.id+'" aria-label="Edit '+esc(p.name)+'">'+ic('edit')+'</button><button class="btn bad" data-a="del" data-id="'+p.id+'" aria-label="Delete '+esc(p.name)+'">'+ic('del')+'</button></span></div>';
+ });
+ return h;
+}
+function modal(html){
+ var l=document.getElementById('layer');
+ l.innerHTML='<div class="ov" data-a="ovx"><div class="dlg" role="dialog" aria-modal="true">'+html+'</div></div>';
+ var rs=document.getElementById('rstrip'),ro=rs&&rs.querySelector('.chip.on');if(ro)rs.scrollLeft=ro.offsetLeft-rs.clientWidth/2+ro.offsetWidth/2;
+ var f=l.querySelector('input,button.btn');if(f){f.focus();if(f.select)f.select()}
+}
+function closeModal(){document.getElementById('layer').innerHTML=''}
+function nameDlg(id){
+ var p=id?S.people.filter(function(x){return x.id===id})[0]:null;
+ modal('<h2>'+(p?'Edit person':'Add person')+'</h2><input class="field" id="nm" maxlength="30" placeholder="Name" value="'+(p?esc(p.name):'')+'" aria-label="Name"><div class="err" id="nerr" role="alert"></div>'+
+  '<div class="acts"><button class="btn" data-a="cancel">Cancel</button><button class="btn pri" data-a="savep" data-id="'+(id||'')+'">Save</button></div>');
+}
+function copyText(){
+ var d=dayOf(date),t=fmt(date);
+ S.people.forEach(function(p){var a=d&&d.paid[p.id]||0;t+='\n'+p.name.toUpperCase()+(d&&d.leave&&d.leave[p.id]?(d.leave[p.id]==='nofood'?' NO FOOD':' LEAVE'):a>0?' '+a:'')});
+ return t;
+}
+function doCopy(){
+ var t=copyText();
+ function ok(){toast('Copied')}
+ function fb(){
+  var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+  var r=false;try{r=document.execCommand('copy')}catch(e){}
+  ta.remove();r?ok():toast('Couldn\u2019t copy. Try again.');
+ }
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb)}else fb();
+}
+document.addEventListener('click',function(e){
+ var el=e.target.closest('[data-a]');if(!el)return;
+ var a=el.dataset.a,id=el.dataset.id;
+ if(a==='ovx'){if(e.target===el)closeModal();return}
+ if(a==='tab'){go(el.dataset.v)}
+ else if(a==='lvset'||a==='nfset'||a==='lvclr'){
+  var lk=[],lx=rf;while(lx<=rt&&lk.length<=366){lk.push(lx);lx=shift(lx,1)}
+  if(a!=='lvclr'){
+   lk.forEach(function(k){var dx=ensureDay(k);dx.leave=dx.leave||{};dx.leave[id]=a==='nfset'?'nofood':'leave'});
+   lk.forEach(function(k){var dx=S.days[k],fr=dx.paid[id]||0;if(fr>0){delete dx.paid[id];carry(id,k,fr)}});
+  }else{
+   lk.forEach(function(k){var dx=S.days[k];if(dx&&dx.leave)delete dx.leave[id]});
+  }
+  if(save()){closeModal();render();toast(a==='lvclr'?'Cleared':(a==='nfset'?'No food set for ':'Leave set for ')+lk.length+(lk.length===1?' day':' days'))}
+ }
+ else if(a==='rpick'){
+  var kv=el.dataset.v,nd=amAuto?ndays():0;
+  if(nd>0){rf=kv;rt=endFor(nd)}
+  else if(kv<rf)rf=kv;else if(kv>rt)rt=kv;else if(kv===rf)rt=rf;else rt=kv;
+  rfresh();
+ }
+ else if(a==='pick'){date=el.dataset.v;render()}
+ else if(a==='prev'){date=shift(date,-1);render()}
+ else if(a==='next'){date=shift(date,1);render()}
+ else if(a==='copy'){doCopy()}
+ else if(a==='tog'){
+  var d=S.days[date];
+  if(d&&d.leave&&d.leave[id]){toast('Marked off. Clear it from the amount button.');return}
+  d=ensureDay(date);
+  if(d.paid[id]>0)delete d.paid[id];else d.paid[id]=d.rate;
+  save();render();
+ }
+ else if(a==='amt'){
+  rf=date;rt=date;rid=id;amAuto=false;var dd=dayOf(date),cur=dd&&dd.paid[id]||0,pp=S.people.filter(function(x){return x.id===id})[0];
+  modal('<h2>'+esc(pp.name)+' paid</h2><div class="lbl">Amount given</div><input class="field" id="am" type="number" inputmode="numeric" min="0" value="'+cur+'" aria-label="Amount paid" style="margin-top:8px"><div class="lbl" style="margin-top:12px">Days covered</div><div id="rwrap">'+rwrap()+'</div><div class="sub">Days fill from the amount at the daily rate and skip leave days. Tap a day to move the start. Clear the amount to pick days by hand.</div><div class="lbl" style="margin-top:12px">Or mark the days above</div><div class="acts" style="margin-top:6px"><button class="btn" data-a="lvset" data-id="'+id+'">Leave</button><button class="btn" data-a="nfset" data-id="'+id+'">No food</button><button class="btn" data-a="lvclr" data-id="'+id+'">Clear</button></div><div class="err" id="aerr" role="alert"></div><div class="acts"><button class="btn" data-a="cancel">Cancel</button><button class="btn pri" data-a="saveamt" data-id="'+id+'">Save</button></div>');
+ }
+ else if(a==='saveamt'){
+  var n2=parseInt(document.getElementById('am').value,10),f=rf,t=rt,ae=document.getElementById('aerr');
+  if(!(n2>=0)){ae.textContent='Enter 0 or more';return}
+  if(!f||!t){ae.textContent='Pick both dates';return}
+  if(t<f){ae.textContent='End date must be on or after the start date';return}
+  var rk=[],kk=f;while(kk<=t&&rk.length<=366){rk.push(kk);kk=shift(kk,1)}
+  if(rk.length>366){ae.textContent='Range is too long. Max 1 year';return}
+  var left=n2,lastk=null;
+  rk.forEach(function(k){var dx=ensureDay(k);if(dx.leave&&dx.leave[id]){delete dx.paid[id];return}var give=Math.min(dx.rate,left);left-=give;lastk=k;if(give>0)dx.paid[id]=give;else delete dx.paid[id]});
+  if(left>0){if(amAuto||!lastk)carry(id,rk[rk.length-1],left);else{var dl=S.days[lastk];dl.paid[id]=(dl.paid[id]||0)+left}}
+  if(save()){closeModal();date=f;render();toast(rk.length>1?'Added across '+rk.length+' days':'Saved')}
+ }
+ else if(a==='add'){nameDlg()}
+ else if(a==='edit'){nameDlg(id)}
+ else if(a==='cancel'){closeModal()}
+ else if(a==='savep'){
+  var v=document.getElementById('nm').value.trim(),er=document.getElementById('nerr');
+  if(!v){er.textContent='Enter a name';return}
+  var dup=S.people.some(function(p){return p.id!==id&&p.name.toLowerCase()===v.toLowerCase()});
+  if(dup){er.textContent='That name\u2019s already in the list';return}
+  if(id){S.people.forEach(function(p){if(p.id===id)p.name=v})}
+  else{S.people.push({id:uid(),name:v,start:Object.keys(S.days).length?date:null});}
+  if(save()){closeModal();render();toast(id?'Name updated':'Person added')}
+ }
+ else if(a==='del'){
+  var p=S.people.filter(function(x){return x.id===id})[0];
+  modal('<h2>Delete '+esc(p.name)+'?</h2><div>Their payment history is removed too. This can\u2019t be undone.</div><div class="acts"><button class="btn" data-a="cancel">Cancel</button><button class="btn bad" data-a="delok" data-id="'+id+'">Delete</button></div>');
+ }
+ else if(a==='delok'){
+  S.people=S.people.filter(function(p){return p.id!==id});
+  for(var k in S.days){delete S.days[k].paid[id];if(S.days[k].leave)delete S.days[k].leave[id]}
+  if(save()){closeModal();render();toast('Deleted')}
+ }
+ else if(a==='rate'){
+  var inp=document.getElementById('rate'),n=parseInt(inp.value,10),re=document.getElementById('rerr');
+  if(!(n>0)){re.textContent='Enter an amount above 0';return}
+  S.rate=n;if(save()){re.textContent='';toast('Amount saved')}
+ }
+});
+document.addEventListener('input',function(e){
+ if(e.target.id==='am'){amAuto=true;var n=ndays();rt=n>0?endFor(n):rf;rfresh()}
+});
+document.addEventListener('change',function(e){
+ if(e.target.id==='dp'&&e.target.value){date=e.target.value;render()}
+});
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape')closeModal();
+ if(e.key==='Enter'&&(e.target.id==='nm'||e.target.id==='am')){var b=document.querySelector('[data-a="savep"],[data-a="saveamt"]');if(b)b.click()}
+});
+window.addEventListener('hashchange',function(){closeModal();render()});
+S=load();date=today();render();
+try{var AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;if(AP&&AP.addListener)AP.addListener('backButton',function(){if(document.getElementById('layer').innerHTML){closeModal()}else if(route()!=='day'){go('day')}else if(AP.exitApp){AP.exitApp()}})}catch(e){}
+</script>
+</body>
+</html>

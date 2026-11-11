@@ -1,0 +1,6 @@
+{
+  "appId": "com.dailypot.app",
+  "appName": "Daily pot",
+  "webDir": "www",
+  "android": { "backgroundColor": "#FAF6EE" }
+}
