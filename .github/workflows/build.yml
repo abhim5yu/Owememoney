@@ -1,0 +1,141 @@
+name: Build APK
+
+on:
+  push:
+    paths:
+      - 'update.zip'
+      - 'www/**'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply update.zip (replaces old files)
+        run: |
+          set -e
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          if [ -f update.zip ]; then
+            rm -rf /tmp/u && mkdir /tmp/u
+            unzip -q -o update.zip -d /tmp/u
+            rm -rf /tmp/u/__MACOSX
+            W=$(find /tmp/u -type d -name www | head -1)
+            if [ -n "$W" ]; then
+              SRC=$(dirname "$W")
+              rm -rf "$SRC/.github" "$SRC/.git" "$SRC/update.zip" "$SRC/signing" "$SRC/android" "$SRC/node_modules"
+              rm -rf www
+              cp -a "$SRC"/. .
+            else
+              H=$(find /tmp/u -type f -name '*.html' | head -1)
+              if [ -z "$H" ]; then echo "ERROR: update.zip has no www folder and no .html file"; exit 1; fi
+              mkdir -p www
+              cp "$H" www/index.html
+            fi
+            rm -f update.zip
+            git add -A
+            git commit -m "Apply update.zip" || true
+            git push origin HEAD
+          fi
+
+      - name: Check web files
+        run: |
+          test -f www/index.html || { echo "ERROR: www/index.html is missing"; exit 1; }
+          test -f package.json || { echo "ERROR: package.json is missing"; exit 1; }
+          test -f capacitor.config.json || { echo "ERROR: capacitor.config.json is missing"; exit 1; }
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install packages
+        run: npm install --no-audit --no-fund
+
+      - name: Create signing key (first run only)
+        run: |
+          set -e
+          if [ ! -f signing/release.keystore ]; then
+            mkdir -p signing
+            PW=$(openssl rand -hex 12)
+            keytool -genkeypair -keystore signing/release.keystore -storetype PKCS12 \
+              -alias dailypot -keyalg RSA -keysize 2048 -validity 36500 \
+              -storepass "$PW" -keypass "$PW" -dname "CN=Daily Pot, O=Personal, C=IN"
+            echo "pw=$PW" > signing/keystore.properties
+            git add signing
+            git commit -m "Add signing key"
+            git push origin HEAD
+          fi
+
+      - name: Add Android platform
+        run: |
+          set -e
+          npx cap add android
+          npx cap sync android
+          chmod +x android/gradlew
+          cat >> android/app/build.gradle <<'GRADLE'
+
+          def ksProps = new Properties()
+          ksProps.load(new FileInputStream(file('../../signing/keystore.properties')))
+          def vc = (project.findProperty('vc') ?: '1').toString().toInteger()
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file('../../signing/release.keystore')
+                      storePassword ksProps['pw']
+                      keyAlias 'dailypot'
+                      keyPassword ksProps['pw']
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+              defaultConfig {
+                  versionCode vc
+                  versionName "1.0.${vc}"
+              }
+          }
+          GRADLE
+
+      - name: Build APK
+        working-directory: android
+        run: ./gradlew assembleRelease -Pvc=${{ github.run_number }} --no-daemon
+
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk daily-pot-v${{ github.run_number }}.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Daily pot v${{ github.run_number }}
+          files: daily-pot-v${{ github.run_number }}.apk
+          make_latest: true
+
+      - name: Keep only the 3 newest releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 100 --json tagName --jq '.[3:][].tagName' | xargs -r -n1 gh release delete --cleanup-tag -y
