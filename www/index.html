@@ -147,6 +147,12 @@ button.row{transition:transform .1s,background .15s}
 </style>
 </head>
 <body>
+<script>
+/* DEBUG BUILD ONLY: shows any JS error on screen instead of a blank page. Remove for normal use. */
+function dbgShow(t){var d=document.createElement('pre');d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99;background:#fff;color:#b00020;padding:16px;margin:0;white-space:pre-wrap;overflow:auto;font:12px monospace';d.textContent=t+'\n\n'+navigator.userAgent;document.body.appendChild(d)}
+window.onerror=function(m,u,l,c){dbgShow('ERROR: '+m+' (line '+l+':'+c+')')};
+window.addEventListener('unhandledrejection',function(e){dbgShow('PROMISE ERROR: '+(e.reason&&e.reason.message||e.reason))});
+</script>
 <div id="app"></div>
 <div id="layer"></div>
 <script>
@@ -242,7 +248,70 @@ function amDlg(id){
  h+='<div class="lbl" style="margin-top:12px">Or mark '+(day?'this day':'the days above')+'</div><div class="acts" style="margin-top:6px"><button class="btn" data-a="lvset" data-id="'+id+'">Leave</button><button class="btn" data-a="nfset" data-id="'+id+'">No food</button><button class="btn" data-a="lvclr" data-id="'+id+'">Clear</button></div><div class="err" id="aerr" role="alert"></div><div class="acts"><button class="btn" data-a="cancel">Cancel</button><button class="btn pri" data-a="saveamt" data-id="'+id+'">Save</button></div>';
  return h;
 }
-furia-label="Pick start and end day">',k=s;
+function addDlg(){
+ var h='<h2>Add person</h2><input class="field" id="nm" maxlength="30" placeholder="Name" value="'+esc(nmVal)+'" aria-label="Name"><div class="err" id="nerr" role="alert"></div>'+
+  '<div class="acts" style="margin-top:0"><button class="btn'+(npTemp?'':' on')+'" data-a="nptype" data-v="0">Regular</button><button class="btn'+(npTemp?' on':'')+'" data-a="nptype" data-v="1">Few days</button></div>';
+ if(npTemp)h+='<div class="lbl" style="margin-top:14px">Amount given</div><input class="field" id="am" type="number" inputmode="numeric" min="0" value="" placeholder="e.g. 75" aria-label="Amount given" style="margin-top:8px"><div class="lbl" style="margin-top:12px">Days</div><div id="rwrap">'+rwrap()+'</div><div class="sub">Covers the days from the amount. They drop off the list after the last day.</div>';
+ h+='<div class="acts"><button class="btn" data-a="cancel">Cancel</button><button class="btn pri" data-a="savep" data-id="">Save</button></div>';
+ modal(h);
+}
+function monthOf(k){return k.slice(0,7)}
+function mshift(mo,n){var d=new Date(+mo.slice(0,4),+mo.slice(5,7)-1+n,1);return d.getFullYear()+'-'+pad(d.getMonth()+1)}
+function histDlg(id,mo){
+ var p=person(id);if(!p)return;
+ var td=today(),keys=Object.keys(S.days).sort(),first=keys[0],base=first&&first<S.created?first:S.created;
+ var x=dues().filter(function(q){return q.p.id===id})[0],paidAll=0;
+ keys.forEach(function(k){paidAll+=S.days[k].paid[id]||0});
+ var st=p.start||base,en=p.until&&p.until<td?p.until:td,last=en;
+ keys.forEach(function(k){if((S.days[k].paid[id]||0)>0&&k>last)last=k});
+ var m0=monthOf(st),m1=monthOf(last);
+ if(!mo)mo=monthOf(td);
+ if(mo>m1)mo=m1;if(mo<m0)mo=m0;
+ var y=+mo.slice(0,4),mn=+mo.slice(5,7),dim=new Date(y,mn,0).getDate(),lead=(new Date(y,mn-1,1).getDay()+6)%7,cells='',i,k;
+ for(i=0;i<lead;i++)cells+='<span></span>';
+ for(i=1;i<=dim;i++){
+  k=mo+'-'+pad(i);
+  if(k<st||k>last){cells+='<span class="cell"><span class="off">'+i+'</span></span>';continue}
+  var d=S.days[k],off=d&&d.leave&&d.leave[id],rate=d?d.rate:S.rate,a=d&&d.paid[id]||0,due=(k<=en&&!off)?rate:0,lbl,cls;
+  if(off){lbl=off==='nofood'?'No food':'Leave';cls=off==='nofood'?'nofood':'leave'}
+  else if(k>td){lbl=a>0?'Advance':'Not due';cls=a>0?'paid':'nd'}
+  else if(a>0&&a>=due){lbl='Paid';cls='paid'}
+  else if(a>0){lbl='Partial';cls='part'}
+  else{lbl='Pending';cls='unpaid'}
+  cells+='<button class="cell" data-a="hday" data-v="'+k+'" aria-label="'+fmt(k)+', '+lbl+(a>0?', '+a+(due?' of '+due:''):'')+'"><span class="'+cls+(k===td?' today':'')+'">'+i+'</span></button>';
+ }
+ var title=new Date(y,mn-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+ modal('<h2>'+esc(p.name)+'</h2><div class="acts" style="margin:0 0 14px"><div class="card" style="flex:1;margin:0;padding:10px 14px"><div class="lbl">Paid</div><div style="font-size:22px;font-weight:800">'+paidAll+'</div></div><div class="card" style="flex:1;margin:0;padding:10px 14px;background:var(--peach)"><div class="lbl">'+(x.credit?'Advance':'Pending')+'</div><div style="font-size:22px;font-weight:800">'+(x.credit||x.owe)+'</div></div></div>'+
+  '<div class="calnav"><button class="btn" data-a="hmon" data-id="'+id+'" data-v="'+mshift(mo,-1)+'" aria-label="Previous month"'+(mo<=m0?' disabled':'')+'>'+ic('back')+'</button><div class="calttl" aria-live="polite">'+title+'</div><button class="btn flip" data-a="hmon" data-id="'+id+'" data-v="'+mshift(mo,1)+'" aria-label="Next month"'+(mo>=m1?' disabled':'')+'>'+ic('back')+'</button></div>'+
+  '<div class="wk" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div><div class="cal">'+cells+'</div>'+
+  '<div class="legend"><span><i class="paid"></i>Paid</span><span><i class="part"></i>Partial</span><span><i class="unpaid"></i>Pending</span><span><i class="leave"></i>Leave</span><span><i class="nofood"></i>No food</span></div>'+
+  '<div class="acts"><button class="btn" data-a="cancel">Close</button></div>');
+}
+function startOf(p){return p.start||null}
+function dues(){
+ var keys=Object.keys(S.days).sort(),first=keys[0],td=today(),base=first&&first<S.created?first:S.created;
+ return S.people.map(function(p){
+  var net=0,k=p.start||base,g=0,endk=p.until&&p.until<td?p.until:td;
+  while(k&&k<=endk&&g++<1500){
+   var d=S.days[k];
+   net+=d?(d.leave&&d.leave[p.id]?0:d.rate):S.rate;
+   k=shift(k,1);
+  }
+  keys.forEach(function(x){net-=S.days[x].paid[p.id]||0});
+  var owe=Math.max(0,net);
+  return {p:p,owe:owe,credit:Math.max(0,-net),n:Math.ceil(owe/S.rate)};
+ });
+}
+var rf,rt,amAuto=false;
+function ndays(){var a=parseInt((document.getElementById('am')||{}).value,10);return a>0?Math.min(366,Math.ceil(a/S.rate)):0}
+function rfresh(){var sc=document.getElementById('rstrip'),pos=sc?sc.scrollLeft:0;document.getElementById('rwrap').innerHTML=rwrap();var s2=document.getElementById('rstrip');if(s2)s2.scrollLeft=pos}
+var rid;
+function isOff(k){var d=S.days[k];return !!(d&&d.leave&&d.leave[rid])}
+function endFor(n){var k=rf,c=0,g=0;while(g++<800){if(!isOff(k))c++;if(c>=n)return k;k=shift(k,1)}return k}
+function rwrap(){
+ var b=today(),s=shift(b,-45),e=shift(b,60);
+ if(rf<s)s=shift(rf,-10);if(rt>e)e=shift(rt,10);
+ var h='<div class="strip d" id="rstrip" role="group" aria-label="Pick start and end day">',k=s;
  while(k<=e){
   var p=k.split('-'),w=new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-GB',{weekday:'short'});
   var on=k===rf||k===rt,mid=k>rf&&k<rt;
@@ -267,53 +336,55 @@ function tabs(r){
  function b(id,l){return '<button class="btn'+(r===id?' on':'')+'" data-a="tab" data-v="'+id+'"'+(r===id?' aria-current="page"':'')+'>'+l+'</button>'}
  return '<nav class="tabs" aria-label="Main"><div>'+b('day','Day')+b('dues','Dues')+b('people','People')+'</div></nav>';
 }
-function render(){
+function render(anim){
  var r=route(),h='';
  if(r==='day')h=vDay();else if(r==='dues')h=vDues();else h=vPeople();
- document.getElementById('app').innerHTML=h+tabs(r);
+ var app=document.getElementById('app');app.innerHTML=h+tabs(r);
+ app.classList.remove('enter');if(anim){void app.offsetWidth;app.classList.add('enter')}
  var st=document.getElementById('strip'),on=st&&st.querySelector('.chip.on');
  if(on)st.scrollLeft=on.offsetLeft-st.clientWidth/2+on.offsetWidth/2;
+ var bi=document.querySelector('.bar i');if(bi){var bw=+bi.dataset.w;requestAnimationFrame(function(){requestAnimationFrame(function(){bi.style.width=bw+'%'})});lastPct=bw}
+ popId=null;
 }
 function vDay(){
- var d=dayOf(date),rate=d?d.rate:S.rate,n=S.people.length,got=0;
- S.people.forEach(function(p){got+=d&&d.paid[p.id]||0});
- var nl=S.people.filter(function(p){return d&&d.leave&&d.leave[p.id]}).length;var tgt=rate*(n-nl),pct=tgt?Math.min(100,Math.round(got/tgt*100)):0;
- var np=S.people.filter(function(p){return d&&d.paid[p.id]>0}).length;
- var h='<div class="top"><h1>Daily pot</h1><button class="btn" data-a="copy">'+ic('copy')+'Copy day</button></div>';
- h+='<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn" data-a="prev" aria-label="Previous day">'+ic('back')+'</button>'+
-  '<div class="date"><button class="btn" tabindex="-1">'+fmt(date)+(date===today()?' \u00b7 Today':'')+'</button><input type="date" id="dp" value="'+date+'" aria-label="Pick date"></div>'+
-  '<button class="btn" data-a="next" aria-label="Next day">'+ic('next')+'</button></div>'+strip();
+ var PL=S.people.filter(function(p){return vis(p,date)});
+ var d=dayOf(date),rate=d?d.rate:S.rate,n=PL.length,got=0;
+ PL.forEach(function(p){got+=d&&d.paid[p.id]||0});
+ var nl=PL.filter(function(p){return d&&d.leave&&d.leave[p.id]}).length;var tgt=rate*(n-nl),pct=tgt?Math.min(100,Math.round(got/tgt*100)):0;
+ var np=PL.filter(function(p){return d&&d.paid[p.id]>0}).length;
+ var h='<div class="top"><div style="flex:1;min-width:0"><h1>Daily pot</h1><div class="sub" style="margin:2px 0 0">'+fmt(date)+(date===today()?' \u00b7 Today':'')+'</div></div><button class="btn" data-a="themeflip" aria-label="Switch light or dark">'+ic(isDark()?'sun':'moon')+'</button></div>'+strip();
  if(!n)return h+'<div class="empty"><b>Add your first person</b>People you add show up here each day.<div style="margin-top:14px"><button class="btn pri" data-a="tab" data-v="people">Add person</button></div></div>';
  h+='<div class="card" style="background:var(--mint)"><div class="lbl">Collected</div><div class="big">'+got+' <span style="font-size:16px;font-weight:600">of '+tgt+'</span></div>'+
-  '<div class="bar" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+pct+'%"></i></div><div class="sub">'+np+' of '+(n-nl)+' paid'+(nl?', '+nl+' skipping':'')+'</div></div>';
- S.people.forEach(function(p){
+  '<div class="bar" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><i data-w="'+pct+'" style="width:'+lastPct+'%"></i></div><div class="sub">'+np+' of '+(n-nl)+' paid'+(nl?', '+nl+' skipping':'')+'</div></div>';
+ PL.forEach(function(p){
   var a=d&&d.paid[p.id]||0;
-  var lv=d&&d.leave&&d.leave[p.id],full=a>=rate,part=a>0&&!full;
-  h+='<div class="row" style="padding-right:8px"><button class="rb" data-a="tog" data-id="'+p.id+'" aria-pressed="'+(a>0)+'">'+esc(p.name)+'</button>'+
-   '<button class="btn" style="min-height:38px;padding:0 12px" data-a="amt" data-id="'+p.id+'" aria-label="Set amount for '+esc(p.name)+'">'+a+'</button>'+
-   '<button class="tag '+(lv?(lv==='nofood'?'nofood':'leave'):full?'paid':part?'part':'unpaid')+'" style="font-family:inherit;color:var(--ink);cursor:pointer;min-height:38px" data-a="tog" data-id="'+p.id+'">'+ic(lv?(lv==='nofood'?'nofood':'leave'):full?'check':part?'edit':'x')+(lv?(lv==='nofood'?'No food':'Leave'):full?'Paid':part?'Partial':'Unpaid')+'</button></div>';
+  var lv=d&&d.leave&&d.leave[p.id],full=a>=rate,part=a>0&&!full,due=date<=today();
+  h+='<div class="row" style="padding-right:8px"><div class="rb"><span class="nm">'+esc(p.name)+'</span></div>'+
+   '<button class="btn" style="min-height:38px;min-width:60px;padding:0 12px" data-a="amt" data-id="'+p.id+'" aria-label="Set amount for '+esc(p.name)+'">'+a+'</button>'+
+   '<button class="tag st'+(popId===p.id?' pop':'')+' '+(lv?(lv==='nofood'?'nofood':'leave'):full?'paid':part?'part':(due?'unpaid':'nd'))+'" style="font-family:inherit;cursor:pointer;min-height:38px" data-a="tog" data-id="'+p.id+'">'+ic(lv?(lv==='nofood'?'nofood':'leave'):full?'check':part?'edit':'wait')+(lv?(lv==='nofood'?'No food':'Leave'):full?'Paid':part?'Partial':(due?'Pending':'Not due'))+'</button></div>';
  });
- h+='<button class="btn" style="width:100%;margin-top:6px" data-a="add">'+ic('plus')+'Add person</button>';
  return h;
 }
 function vDues(){
- var list=dues(),tot=0,cnt=0;
+ var list=dues().filter(function(x){return live(x.p)||x.owe>0}),tot=0,cnt=0;
  list.forEach(function(x){tot+=x.owe;if(x.owe)cnt++});
  var h='<div class="top"><button class="btn" data-a="tab" data-v="day" aria-label="Back">'+ic('back')+'</button><h1>Dues</h1></div>';
- if(!Object.keys(S.days).length)return h+'<div class="empty"><b>No days recorded yet</b>Mark payments on the Day screen. Dues show up here.</div>';
+ if(!S.people.length)return h+'<div class="empty"><b>No people yet</b>Add people to track what is pending.</div>';
  h+='<div class="card" style="background:var(--butter)"><div class="lbl">Total pending</div><div class="big">'+tot+'</div><div class="sub">'+(cnt?cnt+' '+(cnt===1?'person owes':'people owe'):'Everyone is clear')+'</div></div>';
  list.sort(function(a,b){return b.owe-a.owe}).forEach(function(x){
-  h+='<div class="row" style="cursor:default"><span class="nm">'+esc(x.p.name)+'</span>'+
-   (x.owe?'<span class="tag unpaid">Owes '+x.owe+' \u00b7 '+x.n+(x.n===1?' day':' days')+'</span>':x.credit?'<span class="tag paid">Advance '+x.credit+'</span>':'<span class="tag paid">'+ic('check')+'Clear</span>')+'</div>';
+  h+='<button class="row" data-a="hist" data-id="'+x.p.id+'" aria-label="History for '+esc(x.p.name)+'"><span class="nm">'+esc(x.p.name)+'</span>'+
+   (x.owe?'<span class="tag unpaid">Pending '+x.owe+' \u00b7 '+x.n+(x.n===1?' day':' days')+'</span>':x.credit?'<span class="tag paid">Advance '+x.credit+'</span>':'<span class="tag paid">'+ic('check')+'Clear</span>')+'</button>';
  });
  return h;
 }
 function vPeople(){
  var h='<div class="top"><button class="btn" data-a="tab" data-v="day" aria-label="Back">'+ic('back')+'</button><h1>People</h1><button class="btn pri" data-a="add">'+ic('plus')+'Add</button></div>';
  h+='<div class="card" style="background:var(--lav)"><div class="lbl">Amount per day (new days)</div><div style="display:flex;gap:8px;margin-top:8px"><input class="field" id="rate" type="number" inputmode="numeric" min="1" value="'+S.rate+'" aria-label="Amount per day"><button class="btn pri" data-a="rate">Save</button></div><div class="err" id="rerr" role="alert"></div></div>';
- if(!S.people.length)return h+'<div class="empty"><b>Add your first person</b>Add the people who chip in each day.</div>';
- S.people.forEach(function(p){
-  h+='<div class="row" style="cursor:default;padding-right:6px"><span class="nm">'+esc(p.name)+'</span><span class="ic"><button class="btn" data-a="edit" data-id="'+p.id+'" aria-label="Edit '+esc(p.name)+'">'+ic('edit')+'</button><button class="btn bad" data-a="del" data-id="'+p.id+'" aria-label="Delete '+esc(p.name)+'">'+ic('del')+'</button></span></div>';
+ var th=getTheme();
+ h+='<div class="card" style="background:var(--sky)"><div class="lbl">Theme</div><div class="acts" style="margin-top:8px">'+['auto','light','dark'].map(function(t){return '<button class="btn'+(th===t?' on':'')+'" data-a="theme" data-v="'+t+'" aria-pressed="'+(th===t)+'">'+t.charAt(0).toUpperCase()+t.slice(1)+'</button>'}).join('')+'</div></div>';
+ if(!S.people.filter(live).length)return h+'<div class="empty"><b>Add your first person</b>Add the people who chip in each day.</div>';
+ S.people.filter(live).forEach(function(p){
+  h+='<div class="row" style="cursor:default;padding-right:6px"><span class="nm">'+esc(p.name)+(p.until?' <small>(until '+fmt(p.until)+')</small>':'')+'</span><span class="ic"><button class="btn" data-a="edit" data-id="'+p.id+'" aria-label="Edit '+esc(p.name)+'">'+ic('edit')+'</button><button class="btn bad" data-a="del" data-id="'+p.id+'" aria-label="Delete '+esc(p.name)+'">'+ic('del')+'</button></span></div>';
  });
  return h;
 }
@@ -321,7 +392,7 @@ function modal(html){
  var l=document.getElementById('layer');
  l.innerHTML='<div class="ov" data-a="ovx"><div class="dlg" role="dialog" aria-modal="true">'+html+'</div></div>';
  var rs=document.getElementById('rstrip'),ro=rs&&rs.querySelector('.chip.on');if(ro)rs.scrollLeft=ro.offsetLeft-rs.clientWidth/2+ro.offsetWidth/2;
- var f=l.querySelector('input,button.btn');if(f){f.focus();if(f.select)f.select()}
+ var f=l.querySelector('input')||l.querySelector('button.btn');if(f){f.focus();if(f.select)f.select()}
 }
 function closeModal(){document.getElementById('layer').innerHTML=''}
 function nameDlg(id){
@@ -331,7 +402,7 @@ function nameDlg(id){
 }
 function copyText(){
  var d=dayOf(date),t=fmt(date);
- S.people.forEach(function(p){var a=d&&d.paid[p.id]||0;t+='\n'+p.name.toUpperCase()+(d&&d.leave&&d.leave[p.id]?(d.leave[p.id]==='nofood'?' NO FOOD':' LEAVE'):a>0?' '+a:'')});
+ S.people.filter(function(p){return vis(p,date)}).forEach(function(p){var a=d&&d.paid[p.id]||0;t+='\n'+p.name.toUpperCase()+(d&&d.leave&&d.leave[p.id]?(d.leave[p.id]==='nofood'?' NO FOOD':' LEAVE'):a>0?' '+a:'')});
  return t;
 }
 function doCopy(){
@@ -345,6 +416,7 @@ function doCopy(){
  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb)}else fb();
 }
 document.addEventListener('click',function(e){
+ if(Date.now()-holdUp<400){holdUp=0;return}
  var el=e.target.closest('[data-a]');if(!el)return;
  var a=el.dataset.a,id=el.dataset.id;
  if(a==='ovx'){if(e.target===el)closeModal();return}
@@ -365,7 +437,7 @@ document.addEventListener('click',function(e){
   else if(kv<rf)rf=kv;else if(kv>rt)rt=kv;else if(kv===rf)rt=rf;else rt=kv;
   rfresh();
  }
- else if(a==='pick'){date=el.dataset.v;render()}
+ else if(a==='pick'){date=el.dataset.v;render(true)}
  else if(a==='prev'){date=shift(date,-1);render()}
  else if(a==='next'){date=shift(date,1);render()}
  else if(a==='copy'){doCopy()}
@@ -374,25 +446,42 @@ document.addEventListener('click',function(e){
   if(d&&d.leave&&d.leave[id]){toast('Marked off. Clear it from the amount button.');return}
   d=ensureDay(date);
   if(d.paid[id]>0)delete d.paid[id];else d.paid[id]=d.rate;
+  popId=id;
   save();render();
  }
  else if(a==='amt'){
-  rf=date;rt=date;rid=id;amAuto=false;var dd=dayOf(date),cur=dd&&dd.paid[id]||0,pp=S.people.filter(function(x){return x.id===id})[0];
-  modal('<h2>'+esc(pp.name)+' paid</h2><div class="lbl">Amount given</div><input class="field" id="am" type="number" inputmode="numeric" min="0" value="'+cur+'" aria-label="Amount paid" style="margin-top:8px"><div class="lbl" style="margin-top:12px">Days covered</div><div id="rwrap">'+rwrap()+'</div><div class="sub">Days fill from the amount at the daily rate and skip leave days. Tap a day to move the start. Clear the amount to pick days by hand.</div><div class="lbl" style="margin-top:12px">Or mark the days above</div><div class="acts" style="margin-top:6px"><button class="btn" data-a="lvset" data-id="'+id+'">Leave</button><button class="btn" data-a="nfset" data-id="'+id+'">No food</button><button class="btn" data-a="lvclr" data-id="'+id+'">Clear</button></div><div class="err" id="aerr" role="alert"></div><div class="acts"><button class="btn" data-a="cancel">Cancel</button><button class="btn pri" data-a="saveamt" data-id="'+id+'">Save</button></div>');
+  var dd=dayOf(date),cur=dd&&dd.paid[id]||0;
+  rf=date;rt=date;rid=id;amAuto=false;amVal=null;amMode=cur>0?'day':'span';
+  modal(amDlg(id));
+ }
+ else if(a==='ammode'){
+  amVal=document.getElementById('am').value;amMode=el.dataset.v;rf=date;rt=date;amAuto=false;
+  modal(amDlg(id));
+  if(amMode==='span'&&parseInt(amVal,10)>0){amAuto=true;var nn=ndays();rt=nn>0?endFor(nn):rf;rfresh()}
  }
  else if(a==='saveamt'){
-  var n2=parseInt(document.getElementById('am').value,10),f=rf,t=rt,ae=document.getElementById('aerr');
+  var n2=parseInt(document.getElementById('am').value,10),ae=document.getElementById('aerr'),cnt=1;
   if(!(n2>=0)){ae.textContent='Enter 0 or more';return}
-  if(!f||!t){ae.textContent='Pick both dates';return}
-  if(t<f){ae.textContent='End date must be on or after the start date';return}
-  var rk=[],kk=f;while(kk<=t&&rk.length<=366){rk.push(kk);kk=shift(kk,1)}
-  if(rk.length>366){ae.textContent='Range is too long. Max 1 year';return}
-  var left=n2,lastk=null;
-  rk.forEach(function(k){var dx=ensureDay(k);if(dx.leave&&dx.leave[id]){delete dx.paid[id];return}var give=Math.min(dx.rate,left);left-=give;lastk=k;if(give>0)dx.paid[id]=give;else delete dx.paid[id]});
-  if(left>0){if(amAuto||!lastk)carry(id,rk[rk.length-1],left);else{var dl=S.days[lastk];dl.paid[id]=(dl.paid[id]||0)+left}}
-  if(save()){closeModal();date=f;render();toast(rk.length>1?'Added across '+rk.length+' days':'Saved')}
+  if(amMode==='day'){
+   var dx1=ensureDay(date);
+   if(dx1.leave&&dx1.leave[id]){ae.textContent='That day is marked off. Clear it first.';return}
+   if(n2>0)dx1.paid[id]=n2;else delete dx1.paid[id];
+  }else{
+   if(!rf||!rt||rt<rf){ae.textContent='Pick the days';return}
+   cnt=spreadPay(id,n2,rf,rt,amAuto);
+   date=rf;
+  }
+  if(save()){closeModal();render();toast(cnt>1?'Added across '+cnt+' days':'Saved')}
  }
- else if(a==='add'){nameDlg()}
+ else if(a==='hist'){histDlg(id)}
+ else if(a==='hmon'){histDlg(id,el.dataset.v);var ovl=document.querySelector('.ov');if(ovl){ovl.style.animation='none';ovl.firstChild.style.animation='none'}}
+ else if(a==='hday'){closeModal();date=el.dataset.v;go('day')}
+ else if(a==='nptype'){
+  nmVal=document.getElementById('nm').value;npTemp=el.dataset.v==='1';
+  rf=date;rt=date;rid=null;amAuto=false;amMode='span';amVal=null;
+  addDlg();
+ }
+ else if(a==='add'){npTemp=false;nmVal='';amMode='span';amVal=null;addDlg()}
  else if(a==='edit'){nameDlg(id)}
  else if(a==='cancel'){closeModal()}
  else if(a==='savep'){
@@ -401,7 +490,14 @@ document.addEventListener('click',function(e){
   var dup=S.people.some(function(p){return p.id!==id&&p.name.toLowerCase()===v.toLowerCase()});
   if(dup){er.textContent='That name\u2019s already in the list';return}
   if(id){S.people.forEach(function(p){if(p.id===id)p.name=v})}
-  else{S.people.push({id:uid(),name:v,start:Object.keys(S.days).length?date:null});}
+  else if(npTemp){
+   var amn=parseInt((document.getElementById('am')||{}).value,10);
+   if(!(amn>0)){er.textContent='Enter the amount given';return}
+   var np={id:uid(),name:v,start:rf,until:rt,temp:true};
+   S.people.push(np);
+   spreadPay(np.id,amn,rf,rt,true);
+   date=rf;
+  }else{S.people.push({id:uid(),name:v,start:date})}
   if(save()){closeModal();render();toast(id?'Name updated':'Person added')}
  }
  else if(a==='del'){
@@ -413,24 +509,47 @@ document.addEventListener('click',function(e){
   for(var k in S.days){delete S.days[k].paid[id];if(S.days[k].leave)delete S.days[k].leave[id]}
   if(save()){closeModal();render();toast('Deleted')}
  }
+ else if(a==='themeflip'){try{localStorage.setItem(THEME_KEY,isDark()?'light':'dark')}catch(err){toast('Could not save theme')}applyTheme();render()}
+ else if(a==='theme'){try{localStorage.setItem(THEME_KEY,el.dataset.v)}catch(err){toast('Couldn\u2019t save theme')}applyTheme();render()}
  else if(a==='rate'){
   var inp=document.getElementById('rate'),n=parseInt(inp.value,10),re=document.getElementById('rerr');
   if(!(n>0)){re.textContent='Enter an amount above 0';return}
   S.rate=n;if(save()){re.textContent='';toast('Amount saved')}
  }
 });
+var holdT=0,holdFired=false,holdUp=0;
+function holdCancel(){clearTimeout(holdT);holdT=0}
+function holdLeave(id){
+ var d=S.days[date],msg;
+ if(d&&d.leave&&d.leave[id]){delete d.leave[id];msg='Cleared'}
+ else{
+  d=ensureDay(date);d.leave=d.leave||{};d.leave[id]='leave';
+  var fr=d.paid[id]||0;if(fr>0){delete d.paid[id];carry(id,date,fr)}
+  msg='Leave set for 1 day';
+ }
+ popId=id;
+ if(save()){render();toast(msg)}
+}
+document.addEventListener('pointerdown',function(e){
+ var el=e.target.closest('button.st[data-a="tog"]');if(!el)return;
+ holdFired=false;holdCancel();
+ holdT=setTimeout(function(){holdT=0;holdFired=true;holdLeave(el.dataset.id)},500);
+});
+document.addEventListener('pointerup',function(){holdCancel();if(holdFired){holdFired=false;holdUp=Date.now()}});
+document.addEventListener('pointercancel',function(){holdCancel();holdFired=false});
+document.addEventListener('contextmenu',function(e){if(e.target.closest('button.st[data-a="tog"]'))e.preventDefault()});
 document.addEventListener('input',function(e){
- if(e.target.id==='am'){amAuto=true;var n=ndays();rt=n>0?endFor(n):rf;rfresh()}
+ if(e.target.id==='am'&&amMode==='span'){amAuto=true;var n=ndays();rt=n>0?endFor(n):rf;rfresh()}
 });
 document.addEventListener('change',function(e){
- if(e.target.id==='dp'&&e.target.value){date=e.target.value;render()}
+ if(e.target.id==='dp'&&e.target.value){date=e.target.value;render(true)}
 });
 document.addEventListener('keydown',function(e){
  if(e.key==='Escape')closeModal();
  if(e.key==='Enter'&&(e.target.id==='nm'||e.target.id==='am')){var b=document.querySelector('[data-a="savep"],[data-a="saveamt"]');if(b)b.click()}
 });
-window.addEventListener('hashchange',function(){closeModal();render()});
-S=load();date=today();render();
+window.addEventListener('hashchange',function(){closeModal();render(true)});
+applyTheme();S=load();save();date=today();render(true);
 try{var AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;if(AP&&AP.addListener)AP.addListener('backButton',function(){if(document.getElementById('layer').innerHTML){closeModal()}else if(route()!=='day'){go('day')}else if(AP.exitApp){AP.exitApp()}})}catch(e){}
 </script>
 </body>
