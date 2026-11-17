@@ -139,10 +139,7 @@ main:not([hidden]){animation:up .3s ease both}
 .go>span:first-child{flex:1}
 .day.tap{padding-right:14px}
 .chev{color:var(--mute);font-size:24px;margin-left:6px;line-height:1}
-.lv{height:38px;padding:0 14px;border-radius:999px;background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red);font-size:14px;font-weight:700;flex:none;transition:background .15s,color .15s}
-.lv.on{background:var(--red);color:#fff}
 .row .amt{width:104px}
-.row.lvr .nm,.row.lvr .amt{opacity:.55}
 .card.hol{opacity:.45}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 </style></head><body>
@@ -228,18 +225,16 @@ function mkLabel(d){var m=marks[d];return m?MKN[m.t]+(m.note?" · "+m.note:""):"
 function has(d){return !!(days[d]&&days[d].length)}
 function sum(r){var t=0;r.forEach(function(x){if(x.a)t+=x.a});return t}
 function cnt(r){return r.filter(function(x){return x.a}).length}
-function size(r){return r.filter(function(x){return (x.n.trim()||x.a)&&!x.l}).length}
-function lvc(r){return r.filter(function(x){return x.l}).length}
-function clone(r){return r.map(function(x){return {n:x.n,a:x.a,l:!!x.l}})}
+function size(r){return r.filter(function(x){return x.n.trim()||x.a}).length}
+function clone(r){return r.map(function(x){return {n:x.n,a:x.a}})}
 function blank(){return [{n:"",a:null}]}
 function base(){var ks=Object.keys(days).filter(has).sort().reverse();return ks.length?days[ks[0]].filter(function(x){return x.n.trim()}).map(function(x){return {n:x.n,a:null}}):[]}
 function load(d){sel=d;draft=has(d)?clone(days[d]):base();dirty=false;build();paint()}
 function build(fi,fld){var l=document.getElementById("list");l.innerHTML="";
  draft.forEach(function(x,ix){var r=document.createElement("div");r.className="row"+(fi===ix?" new":"");
-  r.innerHTML='<input class="nm" autocapitalize="words" autocomplete="off" enterkeyhint="next" placeholder="Name" aria-label="Name"><label class="amt"><span>₹</span><input class="num" inputmode="numeric" enterkeyhint="next" placeholder="—" aria-label="Amount"></label><button class="lv" aria-label="Mark leave">Leave</button><button class="rm" aria-label="Remove row">✕</button>';
-  var n=r.querySelector(".nm"),i=r.querySelector(".amt input"),a=r.querySelector(".amt"),lv=r.querySelector(".lv");
-  function sync(){a.classList.toggle("f",!!x.a);lv.classList.toggle("on",!!x.l);i.disabled=!!x.l;i.placeholder="—";r.classList.toggle("lvr",!!x.l)}
-  lv.onclick=function(){if(x.l){x.l=false;if(x.prev)x.a=x.prev}else{x.l=true;x.prev=x.a;x.a=null}i.value=x.a||"";dirty=true;sync();paint()};
+  r.innerHTML='<input class="nm" autocapitalize="words" autocomplete="off" enterkeyhint="next" placeholder="Name" aria-label="Name"><label class="amt"><span>₹</span><input class="num" inputmode="numeric" enterkeyhint="next" placeholder="—" aria-label="Amount"></label><button class="rm" aria-label="Remove row">✕</button>';
+  var n=r.querySelector(".nm"),i=r.querySelector(".amt input"),a=r.querySelector(".amt");
+  function sync(){a.classList.toggle("f",!!x.a)}
   n.value=x.n;i.value=x.a||"";sync();
   n.oninput=function(){x.n=n.value;dirty=true;paint()};
   n.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();i.focus()}};
@@ -257,7 +252,7 @@ function paint(){
  var ni=document.getElementById("mknote");ni.hidden=!mk;if(document.activeElement!==ni)ni.value=mk?mk.note||"":"";
  document.getElementById("tl").textContent=sel===today?"Today’s total":"Day total";
  document.getElementById("tot").textContent=rs(sum(draft));
- var n=cnt(draft),m=size(draft),lc=lvc(draft),tx=m?n+" of "+m+" paid":"";if(lc)tx+=(tx?" · ":"")+lc+" on leave";document.getElementById("cnt").textContent=tx||(mk?MKN[mk.t]:"No one added yet");
+ var n=cnt(draft),m=size(draft),tx=m?n+" of "+m+" paid":"";document.getElementById("cnt").textContent=tx||(mk?MKN[mk.t]:"No one added yet");
  var saved=has(sel),st=document.getElementById("st");
  st.textContent=dirty?"Unsaved":(saved?"Saved":"New");st.className="tag"+(dirty?" u":"");
  var b=document.getElementById("save");b.textContent=dirty?(saved?"Save changes":"Save"):(saved?"Saved":"Save");b.disabled=!dirty;
@@ -267,7 +262,7 @@ function renderSaved(){var ks=dayKeys(),c=document.getElementById("saved");
  document.getElementById("dc").textContent=ks.length+" days";
  if(!ks.length){c.innerHTML='<div class="empty">No saved days yet.</div>';return}
  c.innerHTML="";
- ks.forEach(function(d){var e=days[d]||[],mk=mkLabel(d),sm=(mk?esc(mk)+(e.length?" · ":""):"")+(e.length?cnt(e)+" of "+size(e)+" paid"+(lvc(e)?" · "+lvc(e)+" leave":""):"");
+ ks.forEach(function(d){var e=days[d]||[],mk=mkLabel(d),sm=(mk?esc(mk)+(e.length?" · ":""):"")+(e.length?cnt(e)+" of "+size(e)+" paid":"");
   var r=document.createElement("div");r.className="day tap"+(d===sel?" cur":"");
   r.innerHTML='<button class="go"><span>'+fmt(d)+'<small>'+sm+'</small></span><b class="num">'+(e.length?rs(sum(e)):"—")+'</b><span class="chev">›</span></button>';
   r.querySelector(".go").onclick=function(){openDay(d)};
@@ -289,7 +284,7 @@ document.getElementById("add").onclick=function(){draft.push({n:"",a:null});dirt
 document.getElementById("save").onclick=function(){
  var bad=-1;draft.forEach(function(x,i){if(bad<0&&x.a&&!x.n.trim())bad=i});
  if(bad>=0){toast("Add a name for row "+(bad+1));build(bad);return}
- var c=draft.filter(function(x){return x.n.trim()||x.a}).map(function(x){var o={n:x.n.trim(),a:x.a};if(x.l)o.l=true;return o});
+ var c=draft.filter(function(x){return x.n.trim()||x.a}).map(function(x){return {n:x.n.trim(),a:x.a}});
  if(!c.length){toast("Nothing to save");return}
  days[sel]=c;persist();draft=clone(c);dirty=false;build();paint();toast("Saved "+rs(sum(c)))};
 load(today);
@@ -300,7 +295,7 @@ adv.forEach(function(x){x.f=x.f||x.d;x.t=x.t||x.d});
 function persistAdv(){try{localStorage.setItem(ADV,JSON.stringify(adv))}catch(e){}}
 function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function applyRows(rows,name,delta){var key=name.trim().toLowerCase(),f=rows.filter(function(x){return x.n.trim().toLowerCase()===key})[0];
- if(f){if(delta>0)f.l=false;var v=(f.a||0)+delta;if(f.a&&delta<0&&v<=0)rows.splice(rows.indexOf(f),1);else f.a=v>0?v:null}else if(delta>0)rows.push({n:name.trim(),a:delta})}
+ if(f){var v=(f.a||0)+delta;if(f.a&&delta<0&&v<=0)rows.splice(rows.indexOf(f),1);else f.a=v>0?v:null}else if(delta>0)rows.push({n:name.trim(),a:delta})}
 function rng(f,t){var o=[],a=parse(f),b=parse(t);for(var x=new Date(a);x<=b&&o.length<400;x.setDate(x.getDate()+1))o.push(k(x));return o}
 var aF=today,aT=today;
 function fld(){document.querySelector("#af span").textContent=fmt(aF);document.querySelector("#at span").textContent=fmt(aT)}
@@ -379,9 +374,9 @@ fld();pv();
 var dsh=document.getElementById("dsheet"),openD="";
 function openDay(d){openD=d;var rows=(days[d]||[]).filter(function(x){return x.n||x.a}),h="";
  document.getElementById("d-title").textContent=fmt(d);
- h+='<p class="dsub">'+wd(d)+(rows.length?' · '+cnt(days[d])+' of '+size(days[d])+' paid'+(lvc(days[d])?' · '+lvc(days[d])+' leave':''):'')+'</p>';
+ h+='<p class="dsub">'+wd(d)+(rows.length?' · '+cnt(days[d])+' of '+size(days[d])+' paid':'')+'</p>';
  if(marks[d])h+='<p class="dsub"><span class="tag u">'+esc(mkLabel(d))+'</span></p>';
- rows.forEach(function(x){h+='<div class="dr"><span>'+esc(x.n||"—")+'</span><b class="num'+(x.a?'':' m')+'">'+(x.a?rs(x.a):(x.l?"Leave":"—"))+'</b></div>'});
+ rows.forEach(function(x){h+='<div class="dr"><span>'+esc(x.n||"—")+'</span><b class="num'+(x.a?'':' m')+'">'+(x.a?rs(x.a):"—")+'</b></div>'});
  h+='<div class="dr t"><span>Total</span><span class="num">'+rs(sum(days[d]||[]))+'</span></div>';
  var ad=adv.filter(function(x){return x.f<=d&&d<=x.t});
  if(ad.length)h+='<div class="dn">Includes advance: '+ad.map(function(x){return esc(x.n)+" "+rs(x.a)}).join(", ")+'</div>';
