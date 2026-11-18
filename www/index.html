@@ -432,7 +432,7 @@ function openDay(d){openD=d;var rows=(days[d]||[]).filter(function(x){return x.n
  if(marks[d])h+='<p class="dsub"><span class="tag u">'+esc(mkLabel(d))+'</span></p>';
  rows.forEach(function(x){h+='<div class="dr"><span>'+esc(x.n||"—")+'</span><b class="num'+(x.a?'':' m')+'">'+(x.a?rs(x.a):"—")+'</b></div>'});
  h+='<div class="dr t"><span>Total</span><span class="num">'+rs(sum(days[d]||[]))+'</span></div>';
- var ad=adv.filter(function(x){return x.f<=d&&d<=x.t});
+ var ad=adv.filter(function(x){return x.f<=d&&d<=x.t&&!isOnLeave(x.n,d)});
  if(ad.length)h+='<div class="dn">Includes advance: '+ad.map(function(x){return esc(x.n)+" "+rs(x.a)}).join(", ")+'</div>';
  document.getElementById("d-body").innerHTML=h;dsh.hidden=false}
 function closeDay(){dsh.hidden=true}
