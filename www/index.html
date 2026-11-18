@@ -355,7 +355,11 @@ function renderLeave(){var l=leaves.slice().sort(function(x,y){return x.f<y.f?1:
  if(!l.length){c.innerHTML='<div class="empty">No one on leave.</div>';return}
  c.innerHTML="";
  l.forEach(function(x){var when=fmt(x.f)+(x.f!==x.t?" → "+fmt(x.t):""),r=document.createElement("div");r.className="day";
-  r.innerHTML='<div class="go"><span>'+esc(x.n)+'<small>'+when+'</small></span></div><button class="del" aria-label="Delete leave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>';
+  r.innerHTML='<div class="go"><span>'+esc(x.n)+'<small>'+when+'</small></span></div><button class="lnk" aria-label="Edit leave">Edit</button><button class="del" aria-label="Delete leave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>';
+  r.querySelector(".lnk").onclick=function(){
+   document.getElementById("ln").value=x.n;lF=x.f;lT=x.t;lfld();
+   leaves=leaves.filter(function(y){return y.id!==x.id});persistLeave();renderLeave();
+   document.getElementById("ln").focus();toast("Editing "+x.n+" — adjust and tap Add leave")};
   r.querySelector(".del").onclick=function(){ask("Delete leave for "+x.n+"?","This stops excluding them from future days. Days already skipped are not restored.","Delete",function(){
    leaves=leaves.filter(function(y){return y.id!==x.id});persistLeave();renderLeave();toast("Leave deleted")})};
   c.appendChild(r)})}
