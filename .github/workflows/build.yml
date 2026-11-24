@@ -5,6 +5,8 @@ on:
     paths:
       - 'update.zip'
       - 'www/**'
+      - 'assets/**'
+      - 'make-icon.js'
       - 'package.json'
       - 'capacitor.config.json'
       - '.github/workflows/build.yml'
@@ -118,6 +120,13 @@ jobs:
               }
           }
           GRADLE
+
+      - name: Generate app icon
+        run: |
+          set -e
+          npm i --no-save --no-audit --no-fund @capacitor/assets
+          node make-icon.js
+          npx capacitor-assets generate --android --iconBackgroundColor '#0a84ff' --iconBackgroundColorDark '#0a84ff'
 
       - name: Build APK
         working-directory: android
