@@ -33,7 +33,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
 .row+.row{border-top:1px solid var(--sep)}
 .name{flex:1;font-size:17px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .amt{display:flex;align-items:center;gap:2px;width:132px;height:46px;padding:0 14px;border-radius:12px;background:var(--fill);font-size:20px;font-weight:600;transition:background .15s}
-.amt span{color:var(--mute)}
+.amt span{color:var(--mute);cursor:pointer;padding:8px 6px 8px 0}
 .amt input{width:100%;min-width:0;border:0;background:transparent;font:inherit;color:var(--ink);text-align:right;outline:0}
 .amt input::placeholder{color:var(--mute);font-weight:400}
 .amt.f{background:var(--tint)}
@@ -142,6 +142,13 @@ main:not([hidden]){animation:up .3s ease both}
 .row .amt{width:104px}
 .card.hol{opacity:.45}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.pr{display:flex;align-items:center;min-height:62px;padding:0 14px 0 18px;width:100%;text-align:left}
+.pr+.pr{border-top:1px solid var(--sep)}
+.pr>span:first-child{flex:1;font-size:17px;font-weight:500}
+.pr small{display:block;font-size:13px;color:var(--mute);font-weight:400}
+.pr b{font-weight:600}
+.mh{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;padding:14px 4px 6px}
+nav button svg{flex:none}
 </style></head><body>
 <main id="p-home">
  <h1>Collection</h1>
@@ -157,9 +164,28 @@ main:not([hidden]){animation:up .3s ease both}
   <div class="meta num" id="cnt"></div>
  </section>
  <section class="card"><div id="list"></div><button class="addr" id="add">+ Add person</button></section>
+ <p class="note" id="rownote">Tap ₹ to switch a person on or off for the day.</p>
  <button class="save" id="save">Save</button>
  <div class="hd"><h2>Saved days</h2><span class="num" id="dc"></span></div>
  <section class="card" id="saved"></section>
+</main>
+<main id="p-his" hidden>
+ <h1>History</h1>
+ <section class="card" style="padding:10px"><div class="seg" id="h-rg"><button data-v="month">Month</button><button data-v="all">All time</button></div></section>
+ <div class="card date" id="h-nav">
+  <button class="arr" id="h-prev" aria-label="Previous month">‹</button>
+  <div class="dbtn" id="h-lbl"></div>
+  <button class="arr" id="h-next" aria-label="Next month">›</button>
+ </div>
+ <section class="card total">
+  <div class="cap"><span id="h-cap">Total</span></div>
+  <div class="big num" id="h-tot">₹0</div>
+  <div class="meta num" id="h-meta"></div>
+ </section>
+ <div class="gl">Per person</div>
+ <section class="card" id="h-list"></section>
+ <div class="gl">Days</div>
+ <section class="card" id="h-days"></section>
 </main>
 <main id="p-adv" hidden>
  <h1>Advance</h1>
@@ -197,6 +223,10 @@ main:not([hidden]){animation:up .3s ease both}
  <div class="sh-h"><button class="lnk" id="d-edit">Edit</button><b id="d-title"></b><button class="lnk" id="d-del" style="color:var(--red)">Delete</button></div>
  <div id="d-body"></div>
 </div></div>
+<div id="psheet" class="ov" hidden><div class="sh" role="dialog" aria-label="Person history">
+ <div class="sh-h"><span style="width:60px"></span><b id="p-title"></b><button class="lnk" id="p-x">Close</button></div>
+ <div id="p-body"></div>
+</div></div>
 <main id="p-set" hidden>
  <h1>Settings</h1>
  <div class="gl">Defaults</div>
@@ -213,6 +243,7 @@ main:not([hidden]){animation:up .3s ease both}
 <div id="alert" class="ov" hidden style="align-items:center;padding:0 32px"><div class="al" role="alertdialog"><b id="al-t"></b><p id="al-m"></p><div class="alb"><button id="al-c">Cancel</button><button id="al-o" class="d">Delete</button></div></div></div>
 <nav>
  <button id="t-home" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</button>
+ <button id="t-his"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
  <button id="t-adv"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>Advance</button>
  <button id="t-set"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Settings</button>
 </nav>
@@ -240,13 +271,18 @@ function size(r){return r.filter(function(x){return x.n.trim()||x.a}).length}
 function clone(r){return r.map(function(x){return {n:x.n,a:x.a}})}
 function blank(){return [{n:"",a:null}]}
 function base(){var ks=Object.keys(days).filter(has).sort().reverse();return ks.length?days[ks[0]].filter(function(x){return x.n.trim()}).map(function(x){return {n:x.n,a:null}}):[]}
-function load(d){sel=d;draft=has(d)?clone(days[d]):blank();dirty=false;build();paint()}
+function fresh(d){var nm=base().filter(function(x){return !isOnLeave(x.n,d)});
+ if(!nm.length)return blank();
+ var p=(typeof cfg!=="undefined"&&cfg.perDay)||0;
+ return nm.map(function(x){return {n:x.n,a:(marks[d]||!p)?null:p}})}
+function load(d){sel=d;draft=has(d)?clone(days[d]):fresh(d);dirty=false;build();paint()}
 function build(fi,fld){var l=document.getElementById("list");l.innerHTML="";
  draft.forEach(function(x,ix){var r=document.createElement("div");r.className="row"+(fi===ix?" new":"");
   r.innerHTML='<input class="nm" autocapitalize="words" autocomplete="off" enterkeyhint="next" placeholder="Name" aria-label="Name"><label class="amt"><span>₹</span><input class="num" inputmode="numeric" enterkeyhint="next" placeholder="—" aria-label="Amount"></label><button class="rm" aria-label="Remove row">✕</button>';
   var n=r.querySelector(".nm"),i=r.querySelector(".amt input"),a=r.querySelector(".amt");
   function sync(){a.classList.toggle("f",!!x.a)}
   n.value=x.n;i.value=x.a||"";sync();
+  a.querySelector("span").onclick=function(e){e.preventDefault();var p=cfg.perDay||25;x.a=x.a?null:p;i.value=x.a||"";dirty=true;sync();paint()};
   n.oninput=function(){x.n=n.value;dirty=true;paint()};
   n.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();i.focus()}};
   i.onfocus=function(){setTimeout(function(){i.select()},0)};
@@ -263,10 +299,11 @@ function paint(){
  var ni=document.getElementById("mknote");ni.hidden=!mk;if(document.activeElement!==ni)ni.value=mk?mk.note||"":"";
  document.getElementById("tl").textContent=sel===today?"Today’s total":"Day total";
  document.getElementById("tot").textContent=rs(sum(draft));
- var n=cnt(draft),m=size(draft),tx=m?n+" of "+m+" paid":"";document.getElementById("cnt").textContent=tx||(mk?MKN[mk.t]:"No one added yet");
+ var saved0=has(sel),n=cnt(draft),m=size(draft),tx=m?n+" of "+m+(saved0?" paid":" to pay"):"";document.getElementById("cnt").textContent=tx||(mk?MKN[mk.t]:"No one added yet");
  var saved=has(sel),st=document.getElementById("st");
- st.textContent=dirty?"Unsaved":(saved?"Saved":"New");st.className="tag"+(dirty?" u":"");
- var b=document.getElementById("save");b.textContent=dirty?(saved?"Save changes":"Save"):(saved?"Saved":"Save");b.disabled=!dirty;
+ var pend=!saved&&!dirty&&sum(draft)>0&&!marks[sel],can=dirty||pend;
+ st.textContent=dirty?"Unsaved":(saved?"Saved":(pend?"Not saved":"New"));st.className="tag"+(dirty||pend?" u":"");
+ var b=document.getElementById("save");b.textContent=dirty?(saved?"Save changes":"Save"):(saved?"Saved":"Save");b.disabled=!can;
  renderSaved()}
 function dayKeys(){var o={};Object.keys(days).forEach(function(d){if(has(d))o[d]=1});Object.keys(marks).forEach(function(d){o[d]=1});return Object.keys(o).sort().reverse()}
 function renderSaved(){var ks=dayKeys(),c=document.getElementById("saved");
@@ -298,7 +335,6 @@ document.getElementById("save").onclick=function(){
  var c=draft.filter(function(x){return x.n.trim()||x.a}).map(function(x){return {n:x.n.trim(),a:x.a}});
  if(!c.length){toast("Nothing to save");return}
  days[sel]=c;persist();draft=clone(c);dirty=false;build();paint();toast("Saved "+rs(sum(c)))};
-load(today);
 function checkDate(){var t=k(new Date());if(t===today)return;var wasToday=(sel===today);today=t;if(wasToday&&!dirty)load(today);else paint()}
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")checkDate()});
 window.addEventListener("focus",checkDate);
@@ -391,11 +427,12 @@ document.getElementById("s-pd").oninput=function(e){var v=e.target.value.replace
 document.getElementById("s-th").onclick=function(e){var b=e.target.closest("button");if(!b)return;cfg.theme=b.dataset.v;saveSet();applySet()};
 document.getElementById("s-an").onclick=function(){cfg.anim=!cfg.anim;saveSet();applySet()};
 applySet();
-function route(){var h=location.hash,p=h==="#advance"?"advance":h==="#settings"?"settings":"home";
- [["home","p-home","t-home"],["advance","p-adv","t-adv"],["settings","p-set","t-set"]].forEach(function(x){document.getElementById(x[1]).hidden=p!==x[0];document.getElementById(x[2]).classList.toggle("on",p===x[0])});
- if(p==="home"){if(!dirty)load(sel);else{build();paint()}}else if(p==="advance"){renderAdv();prefill();renderLeave();lfld()}
+function route(){var h=location.hash,p=h==="#advance"?"advance":h==="#settings"?"settings":h==="#history"?"history":"home";
+ [["home","p-home","t-home"],["history","p-his","t-his"],["advance","p-adv","t-adv"],["settings","p-set","t-set"]].forEach(function(x){document.getElementById(x[1]).hidden=p!==x[0];document.getElementById(x[2]).classList.toggle("on",p===x[0])});
+ if(p==="home"){if(!dirty)load(sel);else{build();paint()}}else if(p==="history"){renderHis()}else if(p==="advance"){renderAdv();prefill();renderLeave();lfld()}
  window.scrollTo(0,0)}
 document.getElementById("t-home").onclick=function(){location.hash="#home"};
+document.getElementById("t-his").onclick=function(){location.hash="#history"};
 document.getElementById("t-adv").onclick=function(){location.hash="#advance"};
 document.getElementById("t-set").onclick=function(){location.hash="#settings"};
 window.addEventListener("hashchange",route);
@@ -436,11 +473,59 @@ function openDay(d){openD=d;var rows=(days[d]||[]).filter(function(x){return x.n
  if(ad.length)h+='<div class="dn">Includes advance: '+ad.map(function(x){return esc(x.n)+" "+rs(x.a)}).join(", ")+'</div>';
  document.getElementById("d-body").innerHTML=h;dsh.hidden=false}
 function closeDay(){dsh.hidden=true}
-document.getElementById("d-del").onclick=function(){var d=openD;ask("Delete "+fmt(d)+"?","This day’s record and mark will be removed. Cannot be undone.","Delete",function(){delete days[d];delete marks[d];persist();persistMk();closeDay();if(d===sel)load(sel);else renderSaved();toast("Deleted")})};
+document.getElementById("d-del").onclick=function(){var d=openD;ask("Delete "+fmt(d)+"?","This day’s record and mark will be removed. Cannot be undone.","Delete",function(){delete days[d];delete marks[d];persist();persistMk();closeDay();if(d===sel)load(sel);else renderSaved();if(location.hash==="#history")renderHis();toast("Deleted")})};
 dsh.onclick=function(e){if(e.target===dsh)closeDay()};
 document.getElementById("mk").onclick=function(e){var b=e.target.closest("button");if(!b)return;var v=b.dataset.v;
- if(marks[sel]&&marks[sel].t===v)delete marks[sel];else marks[sel]={t:v,note:(marks[sel]&&marks[sel].note)||""};persistMk();paint()};
+ if(marks[sel]&&marks[sel].t===v)delete marks[sel];else marks[sel]={t:v,note:(marks[sel]&&marks[sel].note)||""};persistMk();if(!has(sel)&&!dirty){draft=fresh(sel);build()}paint()};
 document.getElementById("mknote").oninput=function(e){if(marks[sel]){marks[sel].note=e.target.value.slice(0,40);persistMk();paint()}};
-document.getElementById("d-edit").onclick=function(){function go2(){closeDay();load(openD);window.scrollTo({top:0,behavior:"smooth"})}if(dirty)ask("Discard changes?","Unsaved changes will be lost.","Discard",go2);else go2()};
+document.getElementById("d-edit").onclick=function(){function go2(){closeDay();load(openD);if(location.hash&&location.hash!=="#home")location.hash="#home";window.scrollTo({top:0,behavior:"smooth"})}if(dirty)ask("Discard changes?","Unsaved changes will be lost.","Discard",go2);else go2()};
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!dsh.hidden)closeDay()});
+
+var hMode="month",hM=new Date(parse(today).getFullYear(),parse(today).getMonth(),1);
+function monthName(d,full){return d.toLocaleDateString("en-GB",{month:"long",year:"numeric"})}
+function agg(from,to){var P={},tot=0,dl=[];
+ Object.keys(days).sort().forEach(function(d){if(from&&(d<from||d>to))return;var r=days[d];if(!r||!r.length)return;var t=0;
+  r.forEach(function(x){if(!x.a||!x.n.trim())return;t+=x.a;var key=x.n.trim().toLowerCase(),p=P[key]||(P[key]={n:x.n.trim(),t:0,c:0});p.t+=x.a;p.c++});
+  if(t){tot+=t;dl.push({d:d,t:t})}});
+ return {P:P,tot:tot,dl:dl.reverse()}}
+function renderHis(){
+ document.querySelectorAll("#h-rg button").forEach(function(b){b.classList.toggle("on",b.dataset.v===hMode)});
+ document.getElementById("h-nav").hidden=hMode!=="month";
+ var from=null,to=null;
+ if(hMode==="month"){from=k(hM);to=k(new Date(hM.getFullYear(),hM.getMonth()+1,0));document.getElementById("h-lbl").textContent=monthName(hM)}
+ var a=agg(from,to);
+ document.getElementById("h-cap").textContent=hMode==="month"?"Total this month":"Total all time";
+ document.getElementById("h-tot").textContent=rs(a.tot);
+ document.getElementById("h-meta").textContent=a.dl.length?a.dl.length+" day"+(a.dl.length>1?"s":"")+" · avg "+rs(Math.round(a.tot/a.dl.length))+"/day":"No saved days";
+ var ps=Object.keys(a.P).map(function(x){return a.P[x]}).sort(function(x,y){return y.t-x.t}),c=document.getElementById("h-list");
+ if(!ps.length)c.innerHTML='<div class="empty">Nothing saved yet.</div>';
+ else{c.innerHTML="";ps.forEach(function(p){var r=document.createElement("button");r.className="pr";
+  r.innerHTML='<span>'+esc(p.n)+'<small>'+p.c+' day'+(p.c>1?"s":"")+' paid</small></span><b class="num">'+rs(p.t)+'</b><span class="chev">›</span>';
+  r.onclick=function(){openPerson(p.n)};c.appendChild(r)})}
+ var dc=document.getElementById("h-days");
+ if(!a.dl.length)dc.innerHTML='<div class="empty">No saved days.</div>';
+ else{dc.innerHTML="";a.dl.forEach(function(x){var r=document.createElement("button");r.className="pr";
+  r.innerHTML='<span>'+fmt(x.d)+'<small>'+wd(x.d)+'</small></span><b class="num">'+rs(x.t)+'</b><span class="chev">›</span>';
+  r.onclick=function(){openDay(x.d)};dc.appendChild(r)})}}
+document.getElementById("h-rg").onclick=function(e){var b=e.target.closest("button");if(!b)return;hMode=b.dataset.v;renderHis()};
+document.getElementById("h-prev").onclick=function(){hM=new Date(hM.getFullYear(),hM.getMonth()-1,1);renderHis()};
+document.getElementById("h-next").onclick=function(){hM=new Date(hM.getFullYear(),hM.getMonth()+1,1);renderHis()};
+var psh=document.getElementById("psheet");
+function openPerson(name){var key=name.trim().toLowerCase(),first=null,rows=[],total=0,paid=0;
+ Object.keys(days).sort().forEach(function(d){var r=days[d];if(!r||!r.length)return;
+  var f=r.filter(function(x){return x.n.trim().toLowerCase()===key})[0];
+  if(f&&f.a&&first===null)first=d;
+  if(first!==null&&d>=first){var a=f&&f.a?f.a:0;rows.push({d:d,a:a});if(a){total+=a;paid++}}});
+ rows.reverse();
+ var h='<p class="dsub">'+paid+' of '+rows.length+' days paid · '+rs(total)+' total</p>',cur="",sub={};
+ rows.forEach(function(x){var m=x.d.slice(0,7);sub[m]=(sub[m]||0)+x.a});
+ rows.forEach(function(x){var m=x.d.slice(0,7);
+  if(m!==cur){cur=m;var dd=parse(x.d);h+='<div class="mh"><span>'+monthName(new Date(dd.getFullYear(),dd.getMonth(),1))+'</span><span class="num">'+rs(sub[m])+'</span></div>'}
+  h+='<div class="dr"><span>'+fmt(x.d)+' <span class="m">'+wd(x.d).slice(0,3)+'</span></span><b class="num'+(x.a?'':' m')+'">'+(x.a?rs(x.a):"—")+'</b></div>'});
+ document.getElementById("p-title").textContent=name;
+ document.getElementById("p-body").innerHTML=h;psh.hidden=false}
+function closePerson(){psh.hidden=true}
+document.getElementById("p-x").onclick=closePerson;
+psh.onclick=function(e){if(e.target===psh)closePerson()};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!psh.hidden)closePerson()});
 </script></body></html>
