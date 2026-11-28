@@ -149,6 +149,91 @@ main:not([hidden]){animation:up .3s ease both}
 .pr b{font-weight:600}
 .mh{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;padding:14px 4px 6px}
 nav button svg{flex:none}
+
+/* Apple-inspired modern minimal + restrained bento refinement */
+:root{
+ --bg:#f5f5f7;--card:#fff;--ink:#171719;--mute:#85858c;
+ --sep:#e8e8ed;--blue:#007aff;--red:#ff3b30;--fill:#f1f1f5;
+ --tint:rgba(0,122,255,.10)
+}
+@media(prefers-color-scheme:dark){
+ :root:not([data-theme="light"]){
+  --bg:#000;--card:#18181a;--ink:#f7f7f8;--mute:#929298;
+  --sep:#303034;--blue:#0a84ff;--red:#ff453a;--fill:#27272a;
+  --tint:rgba(10,132,255,.18)
+ }
+}
+:root[data-theme="dark"]{
+ --bg:#000;--card:#18181a;--ink:#f7f7f8;--mute:#929298;
+ --sep:#303034;--blue:#0a84ff;--red:#ff453a;--fill:#27272a;
+ --tint:rgba(10,132,255,.18)
+}
+main{
+ max-width:520px;padding:26px 18px calc(112px + env(safe-area-inset-bottom,0px));
+ gap:18px
+}
+h1{font-size:36px;letter-spacing:-.045em;margin:8px 4px 2px}
+.card{border-radius:24px}
+.date{min-height:76px;padding:7px;border-radius:22px}
+.arr{width:44px;height:44px;border-radius:14px}
+.date .dbtn{font-size:18px}
+.date .dbtn small{font-size:13px;margin-top:2px}
+.total{padding:30px 20px 28px;border-radius:26px}
+.cap{font-size:12px;letter-spacing:.055em}
+.tag{padding:5px 10px;font-size:12px}
+.big{font-size:clamp(64px,20vw,88px);letter-spacing:-.055em;margin:16px 0 10px}
+.meta{font-size:14px;margin-top:12px}
+#list .row{min-height:68px;padding:9px 10px 9px 14px;gap:10px}
+.nm{height:48px;border-radius:15px;font-size:16px;font-weight:600}
+.row .amt{width:112px;height:48px;border-radius:15px;background:var(--tint);font-size:19px}
+.row .amt input{text-align:right}
+.rm{width:34px;height:44px;border-radius:12px}
+.addr{height:58px;border-top:1px solid var(--sep);font-size:16px}
+.save{height:58px;border-radius:18px;font-size:16px;letter-spacing:-.01em}
+.save:active:not(:disabled){transform:scale(.985)}
+.hd{margin:8px 4px -5px}
+.hd h2{font-size:21px;letter-spacing:-.035em}
+.hd span{font-size:13px}
+.day{min-height:68px;padding-left:16px}
+.day+.day,.pr+.pr,.srow+.srow{border-color:var(--sep)}
+.go{min-height:68px;font-size:16px}
+.go small,.pr small{font-size:13px;margin-top:3px}
+.del{height:68px;width:44px}
+.empty{padding:30px 20px;font-size:14px}
+.form{padding:18px;gap:12px}
+.form .nm{height:54px}
+.form .amt{height:54px;border-radius:16px}
+.fld{height:58px;border-radius:16px;padding:0 15px}
+.fld small{font-size:10px;letter-spacing:.06em}
+.fld span{font-size:16px}
+.note{font-size:13px;line-height:1.45}
+.gl{font-size:11px;letter-spacing:.075em;margin:5px 5px -8px}
+.srow{min-height:64px;padding:8px 16px;font-size:16px}
+.seg{gap:4px;padding:4px;border-radius:16px}
+.seg button{height:42px;border-radius:13px;font-size:14px}
+.sw{width:49px;height:30px}
+.sw::after{width:26px;height:26px}
+.sw.on::after{transform:translateX(19px)}
+.pr{min-height:68px;padding:0 15px 0 18px}
+.pr>span:first-child{font-size:16px}
+.chev{font-size:22px}
+nav{
+ background:color-mix(in srgb,var(--card) 94%,transparent);
+ border-top:1px solid var(--sep);
+ padding:5px 8px env(safe-area-inset-bottom,0px);
+ backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+}
+nav button{height:58px;gap:4px;font-size:11px;font-weight:600}
+nav button svg{width:23px;height:23px}
+nav button.on{color:var(--blue)}
+.sh{border-radius:26px 26px 0 0;padding:12px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+.al{border:1px solid var(--sep);border-radius:24px}
+@media(max-width:360px){
+ main{padding-left:14px;padding-right:14px}
+ h1{font-size:33px}
+ .big{font-size:62px}
+ .row .amt{width:96px}
+}
 </style></head><body>
 <main id="p-home">
  <h1>Collection</h1>
